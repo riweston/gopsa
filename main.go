@@ -1,97 +1,22 @@
-package gopsa
+/*
+Copyright © 2021 Richard Weston github@riweston.io
 
-import (
-	"fmt"
-	"strings"
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-	"github.com/simpleforce/simpleforce"
-)
+    http://www.apache.org/licenses/LICENSE-2.0
 
-const (
-)
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+package main
 
-type AppConfig struct {
-	endpoint string
-	username string
-	password string
-	token    string
-}
-
-func setConfig(endpoint string, username string, password string, token string) (appConfig AppConfig) {
-	appConfig = AppConfig{
-		endpoint: endpoint,
-		username: username,
-		password: password,
-		token:    token,
-	}
-	return
-}
-
-func getUserId(appConfig AppConfig) (userId string) {
-	/* 	endpoint := os.Getenv("endpoint")
-	   	username := os.Getenv("username")
-	   	password := os.Getenv("password")
-	   	token := os.Getenv("token") */
-
-	client := simpleforce.NewClient(appConfig.endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
-	if client == nil {
-		// handle the error
-
-		return
-	}
-
-	err := client.LoginPassword(appConfig.username, appConfig.password, appConfig.token)
-	if err != nil {
-		// handle the error
-
-		return
-	}
-
-	query := "select Id, Name, Email from Contact where pse__Is_Resource__c = true and Email LIKE '" + username + "'"
-	result, err := client.Query(query)
-	if err != nil {
-		// handle the error
-	}
-	for _, record := range result.Records {
-		userId = record.StringField("Id")
-	}
-	return
-}
-
-func getAssignmentsAll(appConfig AppConfig, userId string) {
-	client := simpleforce.NewClient(appConfig.endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
-	if client == nil {
-		// handle the error
-
-		return
-	}
-
-	err := client.LoginPassword(appConfig.username, appConfig.password, appConfig.token)
-	if err != nil {
-		// handle the error
-
-		return
-	}
-	filter := []string{
-		"select Id",
-		"Name",
-		"pse__Project__c",
-		"pse__Project__r.Name",
-		"pse__Project__r.pse__Is_Billable__c from pse__Assignment__c where pse__Resource__c = '" + userId + "' and Open_up_Assignment_for_Time_entry__c = false and pse__Closed_for_Time_Entry__c = false",
-	}
-	query := strings.Join(filter, ", ")
-	result, err := client.Query(query)
-	if err != nil {
-		// handle the error
-	}
-	for _, record := range result.Records {
-		userId = record.StringField("Id")
-	}
-	return
-}
+import "github.com/riweston/gopsa/cmd"
 
 func main() {
-	config := setConfig(endpoint, username, password, token)
-	userId := getUserId(config)
-	fmt.Print(userId)
+	cmd.Execute()
 }
