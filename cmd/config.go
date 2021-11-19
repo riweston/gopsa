@@ -86,13 +86,11 @@ func setConfig() {
 }
 
 func setConfigEndpoint(endpoint string) {
-	//viper.Set("endpoint", "a thing")
 	viper.Set("endpoint", endpoint)
 	viper.WriteConfigAs(viper.ConfigFileUsed())
 }
 
 func setConfigUsername(username string) {
-	//viper.Set("endpoint", "a thing")
 	viper.Set("username", username)
 	viper.WriteConfigAs(viper.ConfigFileUsed())
 }
