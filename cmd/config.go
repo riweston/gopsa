@@ -114,3 +114,14 @@ func setConfigToken(endpoint string, username string, token string) {
 	viper.Set("keychainToken", service)
 	viper.WriteConfigAs(viper.ConfigFileUsed())
 }
+func getConfig() appConfig {
+	password, _ := keyring.Get(viper.GetString("keychainPassword"), viper.GetString("username"))
+	token, _ := keyring.Get(viper.GetString("keychainToken"), viper.GetString("username"))
+	return appConfig{
+		endpoint:         viper.GetString("endpoint"),
+		username:         viper.GetString("username"),
+		keychainPassword: password,
+		keychainToken:    token,
+	}
+}
+
