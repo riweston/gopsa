@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/manifoldco/promptui"
+	"github.com/simpleforce/simpleforce"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/zalando/go-keyring"
@@ -83,6 +84,13 @@ func setConfig() {
 	setConfigUsername(resultUsername)
 	setConfigPassword(resultEndpoint, resultUsername, resultPassword)
 	setConfigToken(resultEndpoint, resultUsername, resultToken)
+	appConfig := appConfig{
+		endpoint:         resultEndpoint,
+		username:         resultUsername,
+		keychainPassword: resultPassword,
+		keychainToken:    resultToken,
+	}
+	setConfigUserId(appConfig)
 }
 
 func setConfigEndpoint(endpoint string) {
@@ -114,6 +122,19 @@ func setConfigToken(endpoint string, username string, token string) {
 	viper.Set("keychainToken", service)
 	viper.WriteConfigAs(viper.ConfigFileUsed())
 }
+
+func setConfigUserId(appConfig appConfig) {
+	viper.Set("userId", getUserId(appConfig))
+	viper.WriteConfigAs(viper.ConfigFileUsed())
+}
+
+type appConfig struct {
+	endpoint         string
+	username         string
+	keychainPassword string
+	keychainToken    string
+}
+
 func getConfig() appConfig {
 	password, _ := keyring.Get(viper.GetString("keychainPassword"), viper.GetString("username"))
 	token, _ := keyring.Get(viper.GetString("keychainToken"), viper.GetString("username"))
