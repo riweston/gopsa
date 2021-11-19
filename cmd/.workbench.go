@@ -7,37 +7,6 @@ import (
 	"github.com/simpleforce/simpleforce"
 )
 
-func GetUserId(appConfig AppConfig) (userId string) {
-	/* 	endpoint := os.Getenv("endpoint")
-	   	username := os.Getenv("username")
-	   	password := os.Getenv("password")
-	   	token := os.Getenv("token") */
-
-	client := simpleforce.NewClient(appConfig.endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
-	if client == nil {
-		// handle the error
-
-		return
-	}
-
-	err := client.LoginPassword(appConfig.username, appConfig.password, appConfig.token)
-	if err != nil {
-		// handle the error
-
-		return
-	}
-
-	query := "select Id, Name, Email from Contact where pse__Is_Resource__c = true and Email LIKE '" + username + "'"
-	result, err := client.Query(query)
-	if err != nil {
-		// handle the error
-	}
-	for _, record := range result.Records {
-		userId = record.StringField("Id")
-	}
-	return
-}
-
 func getAssignmentsAll(appConfig AppConfig, userId string) {
 	client := simpleforce.NewClient(appConfig.endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
 	if client == nil {
