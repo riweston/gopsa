@@ -7,7 +7,7 @@ import (
 	"github.com/zalando/go-keyring"
 )
 
-func TestSetConfigEndpoint(t *testing.T) {
+func testSetConfigEndpoint(t *testing.T) {
 
 	url := "test.com"
 	setConfigEndpoint(url)
@@ -20,7 +20,7 @@ func TestSetConfigEndpoint(t *testing.T) {
 	}
 }
 
-func TestSetConfigUsername(t *testing.T) {
+func testSetConfigUsername(t *testing.T) {
 
 	username := "user@test.com"
 	setConfigUsername(username)
@@ -33,7 +33,7 @@ func TestSetConfigUsername(t *testing.T) {
 	}
 }
 
-func TestSetConfigPassword(t *testing.T) {
+func testSetConfigPassword(t *testing.T) {
 
 	url := "test.com"
 	username := "user@test.com"
@@ -51,7 +51,7 @@ func TestSetConfigPassword(t *testing.T) {
 	}
 }
 
-func TestSetConfigToken(t *testing.T) {
+func testSetConfigToken(t *testing.T) {
 
 	url := "test.com"
 	username := "user@test.com"
