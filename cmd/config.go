@@ -125,3 +125,29 @@ func getConfig() appConfig {
 	}
 }
 
+func getUserId(appConfig appConfig) (userId string) {
+	client := simpleforce.NewClient(appConfig.endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
+	if client == nil {
+		// handle the error
+
+		return
+	}
+
+	err := client.LoginPassword(appConfig.username, appConfig.keychainPassword, appConfig.keychainToken)
+	if err != nil {
+		// handle the error
+
+		return
+	}
+	fields := "Id, Name, Email"
+	filters := "pse__Is_Resource__c = true AND Email LIKE '" + appConfig.username + "'"
+	query := "SELECT " + fields + " FROM Contact " + " WHERE " + filters
+	result, err := client.Query(query)
+	if err != nil {
+		// handle the error
+	}
+	for _, record := range result.Records {
+		userId = record.StringField("Id")
+	}
+	return
+}
