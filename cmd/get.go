@@ -99,3 +99,39 @@ func getAssignmentsAll(appConfig appConfig, userId string) ([]projectAssignment,
 	}
 	return list, nil
 }
+
+func getAssignmentsActive(appConfig appConfig, userId string) ([]projectAssignment, error) {
+	var list []projectAssignment
+	currentDate := time.Now().Format("2006-01-02")
+	fields := "Id, Name, pse__Project__c, pse__Project__r.Name, pse__Project__r.pse__Is_Billable__c"
+	filters := fmt.Sprintf("pse__Resource__c = '%s' AND Open_up_Assignment_for_Time_entry__c = false AND pse__Closed_for_Time_Entry__c = false AND pse__Exclude_from_Planners__c = false AND pse__End_Date__c > %s", userId, currentDate)
+	query := "SELECT " + fields + " FROM pse__Assignment__c " + " WHERE " + filters
+
+	client := simpleforce.NewClient(appConfig.endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
+	if client == nil {
+		// handle the error
+
+		return list, fmt.Errorf("")
+	}
+
+	err := client.LoginPassword(appConfig.username, appConfig.keychainPassword, appConfig.keychainToken)
+	if err != nil {
+		// handle the error
+
+		return list, fmt.Errorf("")
+	}
+	result, err := client.Query(query)
+	for _, record := range result.Records {
+		list = append(list, projectAssignment{
+			Id:               record.StringField("Id"),
+			Name:             strings.TrimRight(record.StringField("Name"), "\r\n"),
+			Project:          record.StringField("pse__Project__c"),
+			Project_Name:     record.StringField("pse__Project__r.Name"),
+			Project_Billable: record.StringField("pse__Project__r.pse__Is_Billable__c"),
+		})
+	}
+	if err != nil {
+		// handle the error
+	}
+	return list, nil
+}
