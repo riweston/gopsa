@@ -19,8 +19,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
-	"github.com/olekukonko/tablewriter"
+	"github.com/jedib0t/go-pretty/table"
 	"github.com/simpleforce/simpleforce"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -32,14 +33,26 @@ var getCmd = &cobra.Command{
 	Short: "Retrive timecard related information",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		data, _ := getAssignmentsAll(getConfig(), viper.GetString("userId"))
-		table := tablewriter.NewWriter(os.Stdout)
+		all, _ := cmd.Flags().GetBool("all")
+		if all {
+			data, _ := getAssignmentsAll(getConfig(), viper.GetString("userId"))
+			t := table.NewWriter()
+			t.SetOutputMirror(os.Stdout)
 
-		for _, v := range data {
-			table.Append([]string{v.Id, v.Name, v.Project})
+			for _, v := range data {
+				t.AppendRows([]table.Row{{v.Name}})
+			}
+			t.Render()
+		} else {
+			data, _ := getAssignmentsActive(getConfig(), viper.GetString("userId"))
+			t := table.NewWriter()
+			t.SetOutputMirror(os.Stdout)
+
+			for _, v := range data {
+				t.AppendRows([]table.Row{{v.Name}})
+			}
+			t.Render()
 		}
-		table.Render() // Send output
-
 	},
 }
 
@@ -51,6 +64,7 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	// getCmd.PersistentFlags().String("foo", "", "A help for foo")
+	getCmd.Flags().BoolP("all", "", false, "Get all assignment")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
