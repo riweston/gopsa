@@ -79,6 +79,12 @@ type projectAssignment struct {
 	Project_Billable string
 }
 
+type projectGlobalAssignment struct {
+	Project_Id   string
+	Project_Name string
+	Billable     string
+}
+
 func getAssignmentsAll(appConfig appConfig, userId string) ([]projectAssignment, error) {
 	var list []projectAssignment
 	fields := "Id, Name, pse__Project__c, pse__Project__r.Name, pse__Project__r.pse__Is_Billable__c"
@@ -142,6 +148,39 @@ func getAssignmentsActive(appConfig appConfig, userId string) ([]projectAssignme
 			Project:          record.StringField("pse__Project__c"),
 			Project_Name:     record.StringField("pse__Project__r.Name"),
 			Project_Billable: record.StringField("pse__Project__r.pse__Is_Billable__c"),
+		})
+	}
+	if err != nil {
+		// handle the error
+	}
+	return list, nil
+}
+
+func getGlobalProjects(appConfig appConfig) ([]projectGlobalAssignment, error) {
+	var list []projectGlobalAssignment
+	fields := "Id, Name, pse__Is_Billable__c"
+	filters := "pse__Allow_Timecards_Without_Assignment__c = true and pse__Is_Active__c = true"
+	query := "SELECT " + fields + " FROM pse__Proj__c " + " WHERE " + filters
+
+	client := simpleforce.NewClient(appConfig.endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
+	if client == nil {
+		// handle the error
+
+		return list, fmt.Errorf("")
+	}
+
+	err := client.LoginPassword(appConfig.username, appConfig.keychainPassword, appConfig.keychainToken)
+	if err != nil {
+		// handle the error
+
+		return list, fmt.Errorf("")
+	}
+	result, err := client.Query(query)
+	for _, record := range result.Records {
+		list = append(list, projectGlobalAssignment{
+			Project_Id:   record.StringField("Id"),
+			Project_Name: strings.TrimRight(record.StringField("Name"), "\r\n"),
+			Billable:     record.StringField("pse__Project__c"),
 		})
 	}
 	if err != nil {
