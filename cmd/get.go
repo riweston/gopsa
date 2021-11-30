@@ -17,11 +17,13 @@ package cmd
 
 import (
 	"fmt"
-	"os"
+	"reflect"
 	"strings"
 	"time"
 
-	"github.com/jedib0t/go-pretty/table"
+	"github.com/doug-martin/goqu"
+	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
+
 	"github.com/simpleforce/simpleforce"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -71,76 +73,36 @@ func init() {
 	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-type projectAssignment struct {
-	Id               string
-	Name             string
-	Project          string
-	Project_Name     string
-	Project_Billable string
-}
-
-type projectGlobalAssignment struct {
-	Project_Id   string
-	Project_Name string
-	Billable     string
-}
-
-func getAssignmentsAll(appConfig appConfig, userId string) ([]projectAssignment, error) {
-	var list []projectAssignment
 	fields := "Id, Name, pse__Project__c, pse__Project__r.Name, pse__Project__r.pse__Is_Billable__c"
 	filters := fmt.Sprintf("pse__Resource__c = '%s' AND Open_up_Assignment_for_Time_entry__c = false AND pse__Closed_for_Time_Entry__c = false", userId)
 	query := "SELECT " + fields + " FROM pse__Assignment__c " + " WHERE " + filters
 
-	client := simpleforce.NewClient(appConfig.endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
-	if client == nil {
-		// handle the error
-
-		return list, fmt.Errorf("")
+func getAssignmentsAll(appConfig appConfig, userId string) (*simpleforce.QueryResult, error) {
 	}
+	result, err := newQuery(appConfig, query)
 
-	err := client.LoginPassword(appConfig.username, appConfig.keychainPassword, appConfig.keychainToken)
-	if err != nil {
-		// handle the error
-
-		return list, fmt.Errorf("")
-	}
-	result, err := client.Query(query)
-	for _, record := range result.Records {
-		list = append(list, projectAssignment{
-			Id:               record.StringField("Id"),
-			Name:             strings.TrimRight(record.StringField("Name"), "\r\n"),
-			Project:          record.StringField("pse__Project__c"),
-			Project_Name:     record.StringField("pse__Project__r.Name"),
-			Project_Billable: record.StringField("pse__Project__r.pse__Is_Billable__c"),
-		})
-	}
 	if err != nil {
 		// handle the error
 	}
-	return list, nil
+	return result, nil
+}
+func getAssignmentsActive(appConfig appConfig, userId string) (*simpleforce.QueryResult, error) {
+	}
+	result, err := newQuery(appConfig, query)
+	if err != nil {
+		// handle the error
+	}
+	return result, nil
 }
 
-func getAssignmentsActive(appConfig appConfig, userId string) ([]projectAssignment, error) {
-	var list []projectAssignment
 	currentDate := time.Now().Format("2006-01-02")
 	fields := "Id, Name, pse__Project__c, pse__Project__r.Name, pse__Project__r.pse__Is_Billable__c"
 	filters := fmt.Sprintf("pse__Resource__c = '%s' AND Open_up_Assignment_for_Time_entry__c = false AND pse__Closed_for_Time_Entry__c = false AND pse__Exclude_from_Planners__c = false AND pse__End_Date__c > %s", userId, currentDate)
 	query := "SELECT " + fields + " FROM pse__Assignment__c " + " WHERE " + filters
-
-	client := simpleforce.NewClient(appConfig.endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
-	if client == nil {
-		// handle the error
-
-		return list, fmt.Errorf("")
+func getGlobalProjects(appConfig appConfig) (*simpleforce.QueryResult, error) {
 	}
 
-	err := client.LoginPassword(appConfig.username, appConfig.keychainPassword, appConfig.keychainToken)
-	if err != nil {
-		// handle the error
 
-		return list, fmt.Errorf("")
-	}
-	result, err := client.Query(query)
 	for _, record := range result.Records {
 		list = append(list, projectAssignment{
 			Id:               record.StringField("Id"),
@@ -153,27 +115,18 @@ func getAssignmentsActive(appConfig appConfig, userId string) ([]projectAssignme
 	if err != nil {
 		// handle the error
 	}
-	return list, nil
+	return result, nil
 }
 
-func getGlobalProjects(appConfig appConfig) ([]projectGlobalAssignment, error) {
-	var list []projectGlobalAssignment
 	fields := "Id, Name, pse__Is_Billable__c"
 	filters := "pse__Allow_Timecards_Without_Assignment__c = true and pse__Is_Active__c = true"
 	query := "SELECT " + fields + " FROM pse__Proj__c " + " WHERE " + filters
+func listTimecard(appConfig appConfig, details bool) []string {
 
-	client := simpleforce.NewClient(appConfig.endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
-	if client == nil {
-		// handle the error
 
-		return list, fmt.Errorf("")
-	}
 
-	err := client.LoginPassword(appConfig.username, appConfig.keychainPassword, appConfig.keychainToken)
-	if err != nil {
-		// handle the error
+	queryResult, _ := newQuery(appConfig, query)
 
-		return list, fmt.Errorf("")
 	}
 	result, err := client.Query(query)
 	for _, record := range result.Records {
@@ -182,9 +135,16 @@ func getGlobalProjects(appConfig appConfig) ([]projectGlobalAssignment, error) {
 			Project_Name: strings.TrimRight(record.StringField("Name"), "\r\n"),
 			Billable:     record.StringField("pse__Project__c"),
 		})
+func newQuery(appConfig appConfig, query string) (*simpleforce.QueryResult, error) {
+	result := &simpleforce.QueryResult{}
+	client := simpleforce.NewClient(appConfig.endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
+	if client == nil {
+		return result, fmt.Errorf("")
 	}
+	err := client.LoginPassword(appConfig.username, appConfig.keychainPassword, appConfig.keychainToken)
 	if err != nil {
-		// handle the error
+		return result, fmt.Errorf("")
 	}
-	return list, nil
+	result, err = client.Query(query)
+	return result, nil
 }
