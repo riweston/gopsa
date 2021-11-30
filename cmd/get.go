@@ -73,12 +73,22 @@ func init() {
 	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-	fields := "Id, Name, pse__Project__c, pse__Project__r.Name, pse__Project__r.pse__Is_Billable__c"
-	filters := fmt.Sprintf("pse__Resource__c = '%s' AND Open_up_Assignment_for_Time_entry__c = false AND pse__Closed_for_Time_Entry__c = false", userId)
-	query := "SELECT " + fields + " FROM pse__Assignment__c " + " WHERE " + filters
-
 func getAssignmentsAll(appConfig appConfig, userId string) (*simpleforce.QueryResult, error) {
+	table := "pse__Assignment__c"
+	fields := []interface{}{
+		"Id",
+		"Name",
+		"pse__Project__c",
+		"pse__Project__r.Name",
+		"pse__Project__r.pse__Is_Billable__c",
 	}
+	query, _, _ := goqu.From(table).Select(fields...).Where(goqu.Ex{
+		"pse__Resource__c":                     userId,
+		"Open_up_Assignment_for_Time_entry__c": false,
+		"pse__Closed_for_Time_Entry__c":        goqu.Op{"eq": true},
+	}).ToSql()
+	query = strings.ReplaceAll(query, "\"", "")
+	query = strings.ReplaceAll(query, "IS", "=")
 	result, err := newQuery(appConfig, query)
 
 	if err != nil {
@@ -86,55 +96,135 @@ func getAssignmentsAll(appConfig appConfig, userId string) (*simpleforce.QueryRe
 	}
 	return result, nil
 }
+
 func getAssignmentsActive(appConfig appConfig, userId string) (*simpleforce.QueryResult, error) {
+	table := "pse__Assignment__c"
+	fields := []interface{}{
+		"Id",
+		"Name",
+		"pse__Project__c",
+		"pse__Project__r.Name",
+		"pse__Project__r.pse__Is_Billable__c",
 	}
+	query, _, _ := goqu.From(table).Select(fields...).Where(goqu.Ex{
+		"pse__Resource__c":                     userId,
+		"Open_up_Assignment_for_Time_entry__c": false,
+		"pse__Closed_for_Time_Entry__c":        false,
+		"pse__Exclude_from_Planners__c":        false,
+		"pse__End_Date__c":                     goqu.Op{"lt": time.Now().Format("2006-01-02")},
+	}).ToSql()
+
+	query = strings.ReplaceAll(query, "\"", "")
+	query = strings.ReplaceAll(query, "IS", "=")
 	result, err := newQuery(appConfig, query)
+
 	if err != nil {
 		// handle the error
 	}
 	return result, nil
 }
 
-	currentDate := time.Now().Format("2006-01-02")
-	fields := "Id, Name, pse__Project__c, pse__Project__r.Name, pse__Project__r.pse__Is_Billable__c"
-	filters := fmt.Sprintf("pse__Resource__c = '%s' AND Open_up_Assignment_for_Time_entry__c = false AND pse__Closed_for_Time_Entry__c = false AND pse__Exclude_from_Planners__c = false AND pse__End_Date__c > %s", userId, currentDate)
-	query := "SELECT " + fields + " FROM pse__Assignment__c " + " WHERE " + filters
 func getGlobalProjects(appConfig appConfig) (*simpleforce.QueryResult, error) {
+	table := "pse__Proj__c"
+	fields := []interface{}{
+		"Id",
+		"Name",
+		"pse__Is_Billable__c",
 	}
+	query, _, _ := goqu.From(table).Select(fields...).Where(goqu.Ex{
+		"pse__Allow_Timecards_Without_Assignment__c": true,
+		"pse__Is_Active__c":                          true,
+	}).ToSql()
 
+	query = strings.ReplaceAll(query, "\"", "")
+	query = strings.ReplaceAll(query, "IS", "=")
+	result, err := newQuery(appConfig, query)
 
-	for _, record := range result.Records {
-		list = append(list, projectAssignment{
-			Id:               record.StringField("Id"),
-			Name:             strings.TrimRight(record.StringField("Name"), "\r\n"),
-			Project:          record.StringField("pse__Project__c"),
-			Project_Name:     record.StringField("pse__Project__r.Name"),
-			Project_Billable: record.StringField("pse__Project__r.pse__Is_Billable__c"),
-		})
-	}
 	if err != nil {
 		// handle the error
 	}
 	return result, nil
 }
 
-	fields := "Id, Name, pse__Is_Billable__c"
-	filters := "pse__Allow_Timecards_Without_Assignment__c = true and pse__Is_Active__c = true"
-	query := "SELECT " + fields + " FROM pse__Proj__c " + " WHERE " + filters
 func listTimecard(appConfig appConfig, details bool) []string {
+	assignments, _ := getAssignmentsAll(appConfig, viper.GetString("userId"))
+	table := "pse__Timecard_Header__c"
+	fields := []interface{}{
+		"Id",
+		"Name",
+		"pse__Project__c",
+		"pse__Assignment__c",
+		"pse__Monday_Hours__c",
+		"pse__Tuesday_Hours__c",
+		"pse__Wednesday_Hours__c",
+		"pse__Thursday_Hours__c",
+		"pse__Friday_Hours__c",
+		"pse__Status__c",
+		"OwnerId",
+		"PROJECT_ID__c",
+		"pse__Approved__c",
+		"pse__Start_Date__c",
+		"pse__End_Date__c",
+		"CreatedById",
+		"CreatedDate",
+		"IsDeleted",
+		"LastModifiedById",
+		"LastModifiedDate",
+		"LastReferencedDate",
+		"LastViewedDate",
+		"pse__Audit_Notes__c",
+		"pse__Billable__c",
+		"pse__Resource__c",
+		"pse__Location_Mon__c",
+		"pse__Location_Tue__c",
+		"pse__Location_Wed__c",
+		"pse__Location_Thu__c",
+		"pse__Location_Fri__c",
+		"pse__Saturday_Hours__c",
+		"pse__Saturday_Notes__c",
+		"pse__Location_Sat__c",
+		"pse__Sunday_Hours__c",
+		"pse__Sunday_Notes__c",
+		"pse__Location_Sun__c",
+		"pse__Timecard_Notes__c",
+		"pse__Submitted__c",
+		"pse__Monday_Notes__c",
+		"pse__Tuesday_Notes__c",
+		"pse__Wednesday_Notes__c",
+		"pse__Thursday_Notes__c",
+		"pse__Friday_Notes__c",
+	}
 
+	timeStart := time.Now().AddDate(0, 0, -7).Format("2006-01-02")
+	timeEnd := time.Now().Format("2006-01-02")
 
+	query, _, _ := goqu.From(table).Select(fields...).Where(goqu.Ex{
+		"pse__Start_Date__c": timeStart,
+		"pse__End_Date__c":   timeEnd,
+		"pse__Resource__c":   viper.GetString("userId"),
+	}).ToSql()
+	query = strings.ReplaceAll(query, "\"", "")
+	query = strings.ReplaceAll(query, "IS", "=")
 
 	queryResult, _ := newQuery(appConfig, query)
 
+	results := []string{}
+
+	for _, record := range queryResult.Records {
+		fmt.Println(record)
+		for _, assignment := range assignments.Records {
+			keys := reflect.ValueOf(assignment).MapKeys()
+			for key := range keys {
+				fmt.Println(key)
+				/* if record.StringField("pse__Assignment__c") == keys[key] {
+
+				} */
+			}
+		}
 	}
-	result, err := client.Query(query)
-	for _, record := range result.Records {
-		list = append(list, projectGlobalAssignment{
-			Project_Id:   record.StringField("Id"),
-			Project_Name: strings.TrimRight(record.StringField("Name"), "\r\n"),
-			Billable:     record.StringField("pse__Project__c"),
-		})
+	return results
+}
+
 func newQuery(appConfig appConfig, query string) (*simpleforce.QueryResult, error) {
 	result := &simpleforce.QueryResult{}
 	client := simpleforce.NewClient(appConfig.endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
