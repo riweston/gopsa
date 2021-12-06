@@ -17,12 +17,9 @@ package cmd
 
 import (
 	"fmt"
-	"reflect"
+	"github.com/riweston/gopsa/internal/utils"
 	"strings"
 	"time"
-
-	"github.com/doug-martin/goqu"
-	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
 
 	"github.com/simpleforce/simpleforce"
 	"github.com/spf13/cobra"
@@ -35,26 +32,28 @@ var getCmd = &cobra.Command{
 	Short: "Retrive timecard related information",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		all, _ := cmd.Flags().GetBool("all")
-		if all {
-			data, _ := getAssignmentsAll(getConfig(), viper.GetString("userId"))
-			t := table.NewWriter()
-			t.SetOutputMirror(os.Stdout)
+		listTimecard(getConfig())
 
-			for _, v := range data {
-				t.AppendRows([]table.Row{{v.Name}})
-			}
-			t.Render()
-		} else {
-			data, _ := getAssignmentsActive(getConfig(), viper.GetString("userId"))
-			t := table.NewWriter()
-			t.SetOutputMirror(os.Stdout)
+		/* 		all, _ := cmd.Flags().GetBool("all")
+		   		if all {
+		   			data, _ := getAssignmentsAll(getConfig(), viper.GetString("userId"))
+		   			t := table.NewWriter()
+		   			t.SetOutputMirror(os.Stdout)
 
-			for _, v := range data {
-				t.AppendRows([]table.Row{{v.Name}})
-			}
-			t.Render()
-		}
+		   			for _, v := range data {
+		   				t.AppendRows([]table.Row{{v.Name}})
+		   			}
+		   			t.Render()
+		   		} else {
+		   			data, _ := getAssignmentsActive(getConfig(), viper.GetString("userId"))
+		   			t := table.NewWriter()
+		   			t.SetOutputMirror(os.Stdout)
+
+		   			for _, v := range data {
+		   				t.AppendRows([]table.Row{{v.Name}})
+		   			}
+		   			t.Render()
+		   		} */
 	},
 }
 
@@ -75,20 +74,27 @@ func init() {
 
 func getAssignmentsAll(appConfig appConfig, userId string) (*simpleforce.QueryResult, error) {
 	table := "pse__Assignment__c"
-	fields := []interface{}{
+	fields := []string{
 		"Id",
 		"Name",
 		"pse__Project__c",
 		"pse__Project__r.Name",
 		"pse__Project__r.pse__Is_Billable__c",
 	}
-	query, _, _ := goqu.From(table).Select(fields...).Where(goqu.Ex{
-		"pse__Resource__c":                     userId,
-		"Open_up_Assignment_for_Time_entry__c": false,
-		"pse__Closed_for_Time_Entry__c":        goqu.Op{"eq": true},
-	}).ToSql()
-	query = strings.ReplaceAll(query, "\"", "")
-	query = strings.ReplaceAll(query, "IS", "=")
+	filters := []string{
+		fmt.Sprintf("pse__Resource__c = '%s'", userId),
+		"AND",
+		"Open_up_Assignment_for_Time_entry__c = false",
+		"AND",
+		"pse__Closed_for_Time_Entry__c = true",
+	}
+	query := fmt.Sprintf(
+		"SELECT %s FROM %s WHERE %s",
+		strings.Join(fields, ","),
+		table,
+		strings.Join(filters, " "),
+	)
+	fmt.Println(query)
 	result, err := newQuery(appConfig, query)
 
 	if err != nil {
@@ -99,23 +105,31 @@ func getAssignmentsAll(appConfig appConfig, userId string) (*simpleforce.QueryRe
 
 func getAssignmentsActive(appConfig appConfig, userId string) (*simpleforce.QueryResult, error) {
 	table := "pse__Assignment__c"
-	fields := []interface{}{
+	fields := []string{
 		"Id",
 		"Name",
 		"pse__Project__c",
 		"pse__Project__r.Name",
 		"pse__Project__r.pse__Is_Billable__c",
 	}
-	query, _, _ := goqu.From(table).Select(fields...).Where(goqu.Ex{
-		"pse__Resource__c":                     userId,
-		"Open_up_Assignment_for_Time_entry__c": false,
-		"pse__Closed_for_Time_Entry__c":        false,
-		"pse__Exclude_from_Planners__c":        false,
-		"pse__End_Date__c":                     goqu.Op{"lt": time.Now().Format("2006-01-02")},
-	}).ToSql()
+	filters := []string{
+		fmt.Sprintf("pse__Resource__c = '%s'", userId),
+		"AND",
+		"Open_up_Assignment_for_Time_entry__c = false",
+		"AND",
+		"pse__Closed_for_Time_Entry__c = false",
+		"AND",
+		"pse__Exclude_from_Planners__c = false",
+		"AND",
+		fmt.Sprintf("pse__End_Date__c = %s",time.Now().Format("2006-01-02")),
+	}
+	query := fmt.Sprintf(
+		"SELECT %s FROM %s WHERE %s",
+		strings.Join(fields, ","),
+		table,
+		strings.Join(filters, " "),
+	)
 
-	query = strings.ReplaceAll(query, "\"", "")
-	query = strings.ReplaceAll(query, "IS", "=")
 	result, err := newQuery(appConfig, query)
 
 	if err != nil {
@@ -126,18 +140,23 @@ func getAssignmentsActive(appConfig appConfig, userId string) (*simpleforce.Quer
 
 func getGlobalProjects(appConfig appConfig) (*simpleforce.QueryResult, error) {
 	table := "pse__Proj__c"
-	fields := []interface{}{
+	fields := []string{
 		"Id",
 		"Name",
 		"pse__Is_Billable__c",
 	}
-	query, _, _ := goqu.From(table).Select(fields...).Where(goqu.Ex{
-		"pse__Allow_Timecards_Without_Assignment__c": true,
-		"pse__Is_Active__c":                          true,
-	}).ToSql()
+	filters := []string{
+		"pse__Allow_Timecards_Without_Assignment__c = true",
+		"AND",
+		"pse__Is_Active__c",
+	}
+	query := fmt.Sprintf(
+		"SELECT %s FROM %s WHERE %s",
+		strings.Join(fields, ","),
+		table,
+		strings.Join(filters, " "),
+	)
 
-	query = strings.ReplaceAll(query, "\"", "")
-	query = strings.ReplaceAll(query, "IS", "=")
 	result, err := newQuery(appConfig, query)
 
 	if err != nil {
@@ -146,10 +165,9 @@ func getGlobalProjects(appConfig appConfig) (*simpleforce.QueryResult, error) {
 	return result, nil
 }
 
-func listTimecard(appConfig appConfig, details bool) []string {
-	assignments, _ := getAssignmentsAll(appConfig, viper.GetString("userId"))
+func listTimecard(appConfig appConfig) *simpleforce.QueryResult {
 	table := "pse__Timecard_Header__c"
-	fields := []interface{}{
+	fields := []string{
 		"Id",
 		"Name",
 		"pse__Project__c",
@@ -194,35 +212,39 @@ func listTimecard(appConfig appConfig, details bool) []string {
 		"pse__Thursday_Notes__c",
 		"pse__Friday_Notes__c",
 	}
-
-	timeStart := time.Now().AddDate(0, 0, -7).Format("2006-01-02")
-	timeEnd := time.Now().Format("2006-01-02")
-
-	query, _, _ := goqu.From(table).Select(fields...).Where(goqu.Ex{
-		"pse__Start_Date__c": timeStart,
-		"pse__End_Date__c":   timeEnd,
-		"pse__Resource__c":   viper.GetString("userId"),
-	}).ToSql()
-	query = strings.ReplaceAll(query, "\"", "")
-	query = strings.ReplaceAll(query, "IS", "=")
+	timeStart, timeEnd := utils.DateCalculator(time.Now())
+	filters := []string{
+		fmt.Sprintf("pse__Start_Date__c = %s", timeStart),
+		"AND",
+		fmt.Sprintf("pse__End_Date__c = %s", timeEnd),
+		"AND",
+		fmt.Sprintf("pse__Resource__c = '%s'", viper.GetString("userId")),
+	}
+	query := fmt.Sprintf(
+		"SELECT %s FROM %s WHERE %s",
+		strings.Join(fields, ","),
+		table,
+		strings.Join(filters, " "),
+	)
 
 	queryResult, _ := newQuery(appConfig, query)
+	return queryResult
 
-	results := []string{}
-
-	for _, record := range queryResult.Records {
-		fmt.Println(record)
-		for _, assignment := range assignments.Records {
-			keys := reflect.ValueOf(assignment).MapKeys()
-			for key := range keys {
-				fmt.Println(key)
-				/* if record.StringField("pse__Assignment__c") == keys[key] {
-
-				} */
-			}
-		}
-	}
-	return results
+	///*	results := []string{}
+	//
+	//	for _, record := range queryResult.Records {
+	//		fmt.Println(record)
+	//		for _, assignment := range assignments.Records {
+	//			keys := reflect.ValueOf(assignment).MapKeys()
+	//			for key := range keys {
+	//				fmt.Println(key)
+	//				/* if record.StringField("pse__Assignment__c") == keys[key] {
+	//
+	//				} */
+	//			}
+	//		}
+	//	}
+	//	return results
 }
 
 func newQuery(appConfig appConfig, query string) (*simpleforce.QueryResult, error) {
