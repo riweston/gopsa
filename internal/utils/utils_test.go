@@ -10,12 +10,12 @@ func TestDateCalculator(t *testing.T) {
 	wantMondayEOW := "2021-11-01"
 	wantSundayEOW := "2021-11-07"
 
-	gotMondayEOW, gotSundayEOW := dateCalculator(dateEndOW)
+	gotMondayEOW, gotSundayEOW := DateCalculator(dateEndOW)
 
 	dateEndOM := time.Date(2021, 11, 29, 0, 0, 0, 0, time.UTC)
 	wantMondayEOM := "2021-11-29"
 	wantSundayEOM := "2021-11-30"
-	gotMondayEOM, gotSundayEOM := dateCalculator(dateEndOM)
+	gotMondayEOM, gotSundayEOM := DateCalculator(dateEndOM)
 
 	if gotMondayEOM != wantMondayEOM {
 		t.Errorf("got %q want %q", gotMondayEOM, wantMondayEOM)

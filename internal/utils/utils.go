@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-func dateCalculator(today time.Time) (string, string) {
+func DateCalculator(today time.Time) (string, string) {
 	mondayIterator := today
 	sundayIterator := today
 	nextMonth := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.UTC).AddDate(0, 1, -1)
