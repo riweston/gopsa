@@ -18,9 +18,13 @@ package cmd
 import (
 	"fmt"
 	"github.com/riweston/gopsa/internal/utils"
+	"io/ioutil"
+	"log"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/simpleforce/simpleforce"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -38,6 +42,11 @@ type timeCardEntry struct {
 	submissionStatus string
 }
 
+type timeCardListResults struct {
+	timeCardResult []timeCardEntry
+	totalHours     float64
+}
+
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:   "get",
@@ -46,7 +55,15 @@ var getCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		lastWeek, _ := cmd.Flags().GetBool("last-week")
 		if lastWeek {
-			listTimecard(getConfig(), time.Now().AddDate(0, 0, -7))
+			data := listTimecard(getConfig(), time.Now().AddDate(0, 0, -7))
+			t := table.NewWriter()
+			t.SetOutputMirror(os.Stdout)
+			t.AppendHeader(table.Row{"Project Name", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Submission Status"})
+			for _, v := range data.timeCardResult {
+				t.AppendRows([]table.Row{{v.projectName, v.mondayHours, v.tuesdayHours, v.wednesdayHours, v.thursdayHours, v.fridayHours, v.submissionStatus}})
+			}
+			t.SetStyle(table.StyleColoredBright)
+			t.Render()
 		} else {
 			listTimecard(getConfig(), time.Now())
 		}
@@ -54,13 +71,7 @@ var getCmd = &cobra.Command{
 		/* 		all, _ := cmd.Flags().GetBool("all")
 		   		if all {
 		   			data, _ := getAssignmentsAll(getConfig(), viper.GetString("userId"))
-		   			t := table.NewWriter()
-		   			t.SetOutputMirror(os.Stdout)
 
-		   			for _, v := range data {
-		   				t.AppendRows([]table.Row{{v.Name}})
-		   			}
-		   			t.Render()
 		   		} else {
 		   			data, _ := getAssignmentsActive(getConfig(), viper.GetString("userId"))
 		   			t := table.NewWriter()
@@ -181,7 +192,7 @@ func getGlobalProjects(appConfig appConfig) (*simpleforce.QueryResult, error) {
 	return result, nil
 }
 
-func listTimecard(appConfig appConfig, targetDate time.Time) string {
+func listTimecard(appConfig appConfig, targetDate time.Time) (results timeCardListResults) {
 	dbTable := "pse__Timecard_Header__c"
 	fields := []string{
 		"Id",
@@ -245,11 +256,10 @@ func listTimecard(appConfig appConfig, targetDate time.Time) string {
 
 	queryResult, _ := newQuery(appConfig, query)
 	assignments, _ := getAssignmentsAll(appConfig)
-	var result timeCardEntry
 	for _, record := range queryResult.Records {
 		for _, assignment := range assignments.Records {
 			if assignment.StringField("pse__Project__c") == record.StringField("pse__Project__c") {
-				result = timeCardEntry{
+				result := timeCardEntry{
 					projectName:      assignment.StringField("Name"),
 					mondayHours:      record.InterfaceField("pse__Monday_Hours__c"),
 					tuesdayHours:     record.InterfaceField("pse__Tuesday_Hours__c"),
@@ -260,22 +270,22 @@ func listTimecard(appConfig appConfig, targetDate time.Time) string {
 					sundayHours:      record.InterfaceField("pse__Sunday_Hours__c"),
 					submissionStatus: record.StringField("pse__Status__c"),
 				}
+				results.timeCardResult = append(results.timeCardResult, result)
 			}
-			if assignment.StringField("pse__Assignment__c") == record.StringField("pse__Assignment__c") {
-				result = timeCardEntry{
-					mondayHours:    record.InterfaceField("pse__Monday_Hours__c"),
-					tuesdayHours:   record.InterfaceField("pse__Tuesday_Hours__c"),
-					wednesdayHours: record.InterfaceField("pse__Wednesday_Hours__c"),
-					thursdayHours:  record.InterfaceField("pse__Thursday_Hours__c"),
-					fridayHours:    record.InterfaceField("pse__Friday_Hours__c"),
-					saturdayHours:  record.InterfaceField("pse__Saturday_Hours__c"),
-					sundayHours:    record.InterfaceField("pse__Sunday_Hours__c"),
-				}
-			}
+			/*			if assignment.StringField("pse__Assignment__c") == record.StringField("pse__Assignment__c") {
+						result = timeCardEntry{
+							mondayHours:    record.InterfaceField("pse__Monday_Hours__c"),
+							tuesdayHours:   record.InterfaceField("pse__Tuesday_Hours__c"),
+							wednesdayHours: record.InterfaceField("pse__Wednesday_Hours__c"),
+							thursdayHours:  record.InterfaceField("pse__Thursday_Hours__c"),
+							fridayHours:    record.InterfaceField("pse__Friday_Hours__c"),
+							saturdayHours:  record.InterfaceField("pse__Saturday_Hours__c"),
+							sundayHours:    record.InterfaceField("pse__Sunday_Hours__c"),
+						}
+					}*/
 		}
 	}
-	
-	return fmt.Sprintf("%+v\n", result)
+	return
 }
 
 func newQuery(appConfig appConfig, query string) (*simpleforce.QueryResult, error) {
