@@ -90,7 +90,7 @@ func init() {
 }
 
 func getAssignmentsAll(appConfig appConfig) (*simpleforce.QueryResult, error) {
-	table := "pse__Assignment__c"
+	dbTable := "pse__Assignment__c"
 	fields := []string{
 		"Id",
 		"Name",
@@ -108,7 +108,7 @@ func getAssignmentsAll(appConfig appConfig) (*simpleforce.QueryResult, error) {
 	query := fmt.Sprintf(
 		"SELECT %s FROM %s WHERE %s",
 		strings.Join(fields, ","),
-		table,
+		dbTable,
 		strings.Join(filters, " "),
 	)
 	fmt.Println(query)
@@ -156,7 +156,7 @@ func getAssignmentsActive(appConfig appConfig) (*simpleforce.QueryResult, error)
 }
 
 func getGlobalProjects(appConfig appConfig) (*simpleforce.QueryResult, error) {
-	table := "pse__Proj__c"
+	dbTable := "pse__Proj__c"
 	fields := []string{
 		"Id",
 		"Name",
@@ -170,7 +170,7 @@ func getGlobalProjects(appConfig appConfig) (*simpleforce.QueryResult, error) {
 	query := fmt.Sprintf(
 		"SELECT %s FROM %s WHERE %s",
 		strings.Join(fields, ","),
-		table,
+		dbTable,
 		strings.Join(filters, " "),
 	)
 
@@ -183,7 +183,7 @@ func getGlobalProjects(appConfig appConfig) (*simpleforce.QueryResult, error) {
 }
 
 func listTimecard(appConfig appConfig, targetDate time.Time) string {
-	table := "pse__Timecard_Header__c"
+	dbTable := "pse__Timecard_Header__c"
 	fields := []string{
 		"Id",
 		"Name",
@@ -240,7 +240,7 @@ func listTimecard(appConfig appConfig, targetDate time.Time) string {
 	query := fmt.Sprintf(
 		"SELECT %s FROM %s WHERE %s",
 		strings.Join(fields, ","),
-		table,
+		dbTable,
 		strings.Join(filters, " "),
 	)
 
