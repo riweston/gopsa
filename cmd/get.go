@@ -111,7 +111,6 @@ func getAssignmentsAll(appConfig appConfig) (*simpleforce.QueryResult, error) {
 		dbTable,
 		strings.Join(filters, " "),
 	)
-	fmt.Println(query)
 	result, err := newQuery(appConfig, query)
 
 	if err != nil {
