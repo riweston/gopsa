@@ -26,13 +26,30 @@ import (
 	"github.com/spf13/viper"
 )
 
+type timeCardEntry struct {
+	projectName      string
+	mondayHours      string
+	tuesdayHours     string
+	wednesdayHours   string
+	thursdayHours    string
+	fridayHours      string
+	saturdayHours    string
+	sundayHours      string
+	submissionStatus string
+}
+
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Retrive timecard related information",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		listTimecard(getConfig())
+		lastWeek, _ := cmd.Flags().GetBool("last-week")
+		if lastWeek {
+			listTimecard(getConfig(), time.Now().AddDate(0, 0, -7))
+		} else {
+			listTimecard(getConfig(), time.Now())
+		}
 
 		/* 		all, _ := cmd.Flags().GetBool("all")
 		   		if all {
@@ -65,7 +82,7 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	// getCmd.PersistentFlags().String("foo", "", "A help for foo")
-	getCmd.Flags().BoolP("all", "", false, "Get all assignment")
+	getCmd.Flags().BoolP("last-week", "", false, "Get all assignment")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
@@ -86,7 +103,7 @@ func getAssignmentsAll(appConfig appConfig) (*simpleforce.QueryResult, error) {
 		"AND",
 		"Open_up_Assignment_for_Time_entry__c = false",
 		"AND",
-		"pse__Closed_for_Time_Entry__c = true",
+		"pse__Closed_for_Time_Entry__c = false",
 	}
 	query := fmt.Sprintf(
 		"SELECT %s FROM %s WHERE %s",
@@ -165,7 +182,7 @@ func getGlobalProjects(appConfig appConfig) (*simpleforce.QueryResult, error) {
 	return result, nil
 }
 
-func listTimecard(appConfig appConfig) *simpleforce.QueryResult {
+func listTimecard(appConfig appConfig, targetDate time.Time) string {
 	table := "pse__Timecard_Header__c"
 	fields := []string{
 		"Id",
@@ -212,7 +229,7 @@ func listTimecard(appConfig appConfig) *simpleforce.QueryResult {
 		"pse__Thursday_Notes__c",
 		"pse__Friday_Notes__c",
 	}
-	timeStart, timeEnd := utils.DateCalculator(time.Now())
+	timeStart, timeEnd := utils.DateCalculator(targetDate)
 	filters := []string{
 		fmt.Sprintf("pse__Start_Date__c = %s", timeStart),
 		"AND",
@@ -228,23 +245,36 @@ func listTimecard(appConfig appConfig) *simpleforce.QueryResult {
 	)
 
 	queryResult, _ := newQuery(appConfig, query)
-	return queryResult
+	assignments, _ := getAssignmentsAll(appConfig)
+	var result timeCardEntry
+	for _, record := range queryResult.Records {
+		for _, assignment := range assignments.Records {
+			if assignment.StringField("pse__Project__c") == record.StringField("pse__Project__c") {
+				result = timeCardEntry{
+					mondayHours:    record.StringField("pse__Monday_Hours__c"),
+					tuesdayHours:   record.StringField("pse__Tuesday_Hours__c"),
+					wednesdayHours: record.StringField("pse__Wednesday_Hours__c"),
+					thursdayHours:  record.StringField("pse__Thursday_Hours__c"),
+					fridayHours:    record.StringField("pse__Friday_Hours__c"),
+					saturdayHours:  record.StringField("pse__Saturday_Hours__c"),
+					sundayHours:    record.StringField("pse__Sunday_Hours__c"),
+				}
+			}
+			if assignment.StringField("pse__Assignment__c") == record.StringField("pse__Assignment__c") {
+				result = timeCardEntry{
+					mondayHours:    record.StringField("pse__Monday_Hours__c"),
+					tuesdayHours:   record.StringField("pse__Tuesday_Hours__c"),
+					wednesdayHours: record.StringField("pse__Wednesday_Hours__c"),
+					thursdayHours:  record.StringField("pse__Thursday_Hours__c"),
+					fridayHours:    record.StringField("pse__Friday_Hours__c"),
+					saturdayHours:  record.StringField("pse__Saturday_Hours__c"),
+					sundayHours:    record.StringField("pse__Sunday_Hours__c"),
+				}
+			}
+		}
+	}
 
-	///*	results := []string{}
-	//
-	//	for _, record := range queryResult.Records {
-	//		fmt.Println(record)
-	//		for _, assignment := range assignments.Records {
-	//			keys := reflect.ValueOf(assignment).MapKeys()
-	//			for key := range keys {
-	//				fmt.Println(key)
-	//				/* if record.StringField("pse__Assignment__c") == keys[key] {
-	//
-	//				} */
-	//			}
-	//		}
-	//	}
-	//	return results
+	return fmt.Sprintf("%+v\n", result)
 }
 
 func newQuery(appConfig appConfig, query string) (*simpleforce.QueryResult, error) {
