@@ -279,6 +279,7 @@ func listTimecard(appConfig appConfig, targetDate time.Time) string {
 }
 
 func newQuery(appConfig appConfig, query string) (*simpleforce.QueryResult, error) {
+	log.SetOutput(ioutil.Discard)
 	result := &simpleforce.QueryResult{}
 	client := simpleforce.NewClient(appConfig.endpoint, simpleforce.DefaultClientID, simpleforce.DefaultAPIVersion)
 	if client == nil {
