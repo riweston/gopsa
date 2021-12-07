@@ -28,13 +28,13 @@ import (
 
 type timeCardEntry struct {
 	projectName      string
-	mondayHours      string
-	tuesdayHours     string
-	wednesdayHours   string
-	thursdayHours    string
-	fridayHours      string
-	saturdayHours    string
-	sundayHours      string
+	mondayHours      interface{}
+	tuesdayHours     interface{}
+	wednesdayHours   interface{}
+	thursdayHours    interface{}
+	fridayHours      interface{}
+	saturdayHours    interface{}
+	sundayHours      interface{}
 	submissionStatus string
 }
 
@@ -251,29 +251,31 @@ func listTimecard(appConfig appConfig, targetDate time.Time) string {
 		for _, assignment := range assignments.Records {
 			if assignment.StringField("pse__Project__c") == record.StringField("pse__Project__c") {
 				result = timeCardEntry{
-					mondayHours:    record.StringField("pse__Monday_Hours__c"),
-					tuesdayHours:   record.StringField("pse__Tuesday_Hours__c"),
-					wednesdayHours: record.StringField("pse__Wednesday_Hours__c"),
-					thursdayHours:  record.StringField("pse__Thursday_Hours__c"),
-					fridayHours:    record.StringField("pse__Friday_Hours__c"),
-					saturdayHours:  record.StringField("pse__Saturday_Hours__c"),
-					sundayHours:    record.StringField("pse__Sunday_Hours__c"),
+					projectName:      assignment.StringField("Name"),
+					mondayHours:      record.InterfaceField("pse__Monday_Hours__c"),
+					tuesdayHours:     record.InterfaceField("pse__Tuesday_Hours__c"),
+					wednesdayHours:   record.InterfaceField("pse__Wednesday_Hours__c"),
+					thursdayHours:    record.InterfaceField("pse__Thursday_Hours__c"),
+					fridayHours:      record.InterfaceField("pse__Friday_Hours__c"),
+					saturdayHours:    record.InterfaceField("pse__Saturday_Hours__c"),
+					sundayHours:      record.InterfaceField("pse__Sunday_Hours__c"),
+					submissionStatus: record.StringField("pse__Status__c"),
 				}
 			}
 			if assignment.StringField("pse__Assignment__c") == record.StringField("pse__Assignment__c") {
 				result = timeCardEntry{
-					mondayHours:    record.StringField("pse__Monday_Hours__c"),
-					tuesdayHours:   record.StringField("pse__Tuesday_Hours__c"),
-					wednesdayHours: record.StringField("pse__Wednesday_Hours__c"),
-					thursdayHours:  record.StringField("pse__Thursday_Hours__c"),
-					fridayHours:    record.StringField("pse__Friday_Hours__c"),
-					saturdayHours:  record.StringField("pse__Saturday_Hours__c"),
-					sundayHours:    record.StringField("pse__Sunday_Hours__c"),
+					mondayHours:    record.InterfaceField("pse__Monday_Hours__c"),
+					tuesdayHours:   record.InterfaceField("pse__Tuesday_Hours__c"),
+					wednesdayHours: record.InterfaceField("pse__Wednesday_Hours__c"),
+					thursdayHours:  record.InterfaceField("pse__Thursday_Hours__c"),
+					fridayHours:    record.InterfaceField("pse__Friday_Hours__c"),
+					saturdayHours:  record.InterfaceField("pse__Saturday_Hours__c"),
+					sundayHours:    record.InterfaceField("pse__Sunday_Hours__c"),
 				}
 			}
 		}
 	}
-
+	
 	return fmt.Sprintf("%+v\n", result)
 }
 
