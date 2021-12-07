@@ -72,7 +72,7 @@ func init() {
 	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func getAssignmentsAll(appConfig appConfig, userId string) (*simpleforce.QueryResult, error) {
+func getAssignmentsAll(appConfig appConfig) (*simpleforce.QueryResult, error) {
 	table := "pse__Assignment__c"
 	fields := []string{
 		"Id",
@@ -82,7 +82,7 @@ func getAssignmentsAll(appConfig appConfig, userId string) (*simpleforce.QueryRe
 		"pse__Project__r.pse__Is_Billable__c",
 	}
 	filters := []string{
-		fmt.Sprintf("pse__Resource__c = '%s'", userId),
+		fmt.Sprintf("pse__Resource__c = '%s'", viper.GetString("userId")),
 		"AND",
 		"Open_up_Assignment_for_Time_entry__c = false",
 		"AND",
@@ -103,7 +103,7 @@ func getAssignmentsAll(appConfig appConfig, userId string) (*simpleforce.QueryRe
 	return result, nil
 }
 
-func getAssignmentsActive(appConfig appConfig, userId string) (*simpleforce.QueryResult, error) {
+func getAssignmentsActive(appConfig appConfig) (*simpleforce.QueryResult, error) {
 	table := "pse__Assignment__c"
 	fields := []string{
 		"Id",
@@ -113,7 +113,7 @@ func getAssignmentsActive(appConfig appConfig, userId string) (*simpleforce.Quer
 		"pse__Project__r.pse__Is_Billable__c",
 	}
 	filters := []string{
-		fmt.Sprintf("pse__Resource__c = '%s'", userId),
+		fmt.Sprintf("pse__Resource__c = '%s'", viper.GetString("userId")),
 		"AND",
 		"Open_up_Assignment_for_Time_entry__c = false",
 		"AND",
@@ -121,7 +121,7 @@ func getAssignmentsActive(appConfig appConfig, userId string) (*simpleforce.Quer
 		"AND",
 		"pse__Exclude_from_Planners__c = false",
 		"AND",
-		fmt.Sprintf("pse__End_Date__c = %s",time.Now().Format("2006-01-02")),
+		fmt.Sprintf("pse__End_Date__c = %s", time.Now().Format("2006-01-02")),
 	}
 	query := fmt.Sprintf(
 		"SELECT %s FROM %s WHERE %s",
